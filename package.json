@@ -1,0 +1,11 @@
+{
+  "name": "ntl-telegram-webapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^7.1.10"
+  }
+}

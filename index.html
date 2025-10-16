@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Telegram Web App на Netlify</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 720px; margin: auto; }
+    input { padding: 8px; width: 100%; margin-bottom: 12px; font-size: 16px; }
+    button { padding: 10px 16px; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Телеграм Web App на Netlify</h1>
+  <p>Введите ваше имя и отправьте данные обратно через Telegram.</p>
+  <input id="name" placeholder="Ваше имя" />
+  <button id="send">Отправить</button>
+  <p id="status" style="color: #555;"></p>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Инициализация Web App
+    const tg = Telegram.WebApp;
+    tg.ready();
+
+    // Подсказка пользователю
+    const initData = tg.initData || "";
+
+    // Кнопка отправки
+    const sendBtn = document.getElementById('send');
+    const status = document.getElementById('status');
+    sendBtn.addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const payload = { name, initData };
+
+      // Попытка отправить через Telegram Web App (рекомендовано)
+      if (tg && tg.sendData) {
+        try {
+          tg.sendData(JSON.stringify(payload));
+          tg.close();
+          return;
+        } catch (e) {
+          // если не удалось, попробуем fallback
+        }
+      }
+
+      // Ф fallback: отправка на Netlify Function
+      try {
+        const res = await fetch('/.netlify/functions/telegram-webapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          status.textContent = 'Данные отправлены';
+          // можно закрыть окно, если хочется
+          if (tg && tg.close) tg.close();
+        } else {
+          status.textContent = 'Ошибка отправки';
+        }
+      } catch (err) {
+        status.textContent = 'Сетевая ошибка';
+      }
+    });
+  </script>
+</body>
+</html>
