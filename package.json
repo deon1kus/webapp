@@ -1,9 +1,10 @@
 {
-  "name": "ntl-telegram-webapp",
-  "version": "0.1.0",
-  "private": true,
+  "name": "telegram-shop",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "dev": "vite"
   },
   "devDependencies": {
     "vite": "^7.1.10"
