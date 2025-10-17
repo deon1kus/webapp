@@ -3,206 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Магазин в Telegram</title>
+    <title>Telegram Shop</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* CSS переменные для темы Telegram */
         :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-            --button-color: #2481cc;
-            --button-text-color: #ffffff;
-            --secondary-bg-color: #f8f8f8;
-            --hint-color: #999999;
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #2481cc;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f8f8f8;
         }
 
         body {
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-color);
-            color: var(--text-color);
+            background: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+            transition: all 0.3s ease;
         }
 
         .header {
             padding: 16px;
-            background: var(--secondary-bg-color);
-            border-bottom: 1px solid var(--hint-color);
+            background: var(--tg-theme-secondary-bg-color);
+            border-bottom: 1px solid var(--tg-theme-hint-color);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
         }
 
-        .categories {
+        .category-scroll {
             display: flex;
             gap: 8px;
             padding: 16px;
             overflow-x: auto;
-            background: var(--bg-color);
+            background: var(--tg-theme-bg-color);
         }
 
         .category-btn {
-            padding: 8px 16px;
-            border: 1px solid var(--button-color);
+            padding: 10px 20px;
+            border: 1px solid var(--tg-theme-button-color);
             background: transparent;
-            color: var(--button-color);
-            border-radius: 16px;
+            color: var(--tg-theme-button-color);
+            border-radius: 20px;
             white-space: nowrap;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
 
         .category-btn.active {
-            background: var(--button-color);
-            color: var(--button-text-color);
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
         }
 
-        .products-list {
-            padding: 0 16px 80px 16px;
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+            padding-bottom: 80px;
         }
 
         .product-card {
-            display: flex;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--hint-color);
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 16px;
+            padding: 16px;
             cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-color: var(--tg-theme-button-color);
         }
 
         .product-image {
-            width: 80px;
-            height: 80px;
-            border-radius: 8px;
+            width: 100%;
+            height: 120px;
             object-fit: cover;
-        }
-
-        .product-info {
-            flex: 1;
+            border-radius: 12px;
+            margin-bottom: 12px;
         }
 
         .product-name {
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 14px;
             margin-bottom: 4px;
+            line-height: 1.2;
         }
 
         .product-description {
-            font-size: 14px;
-            color: var(--hint-color);
+            font-size: 12px;
+            color: var(--tg-theme-hint-color);
             margin-bottom: 8px;
+            line-height: 1.3;
         }
 
         .product-price {
-            font-weight: 600;
-            color: var(--button-color);
+            font-weight: 700;
+            color: var(--tg-theme-button-color);
+            font-size: 16px;
         }
 
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--hint-color);
-        }
-
-        .quantity-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .quantity-btn {
-            width: 32px;
-            height: 32px;
-            border: 1px solid var(--button-color);
-            background: transparent;
+        .cart-badge {
+            position: fixed;
+            top: 70px;
+            right: 16px;
+            background: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
             border-radius: 50%;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: var(--tg-theme-hint-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color);
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 style="margin: 0; font-size: 20px;">🛍️ Магазин</h1>
+        <h1 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+            <span>🛍️</span>
+            <span>Telegram Shop</span>
+        </h1>
     </div>
 
-    <div class="categories" id="categories">
-        <!-- Категории будут загружены динамически -->
+    <div id="cartBadge" class="cart-badge" style="display: none;">0</div>
+
+    <div class="category-scroll" id="categories">
+        <!-- Категории загружаются динамически -->
     </div>
 
-    <div class="products-list" id="productsList">
-        <!-- Товары будут загружены динамически -->
+    <div class="products-grid" id="productsGrid">
+        <div class="loading">Загрузка товаров...</div>
     </div>
 
     <script>
+        // ===== ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP =====
         const tg = window.Telegram.WebApp;
-        
-        // Инициализация Telegram Web App
-        tg.expand();
-        tg.enableClosingConfirmation();
 
-        // Данные магазина
-        const products = [
+        // Инициализация Mini App
+        tg.expand(); // Раскрываем на весь экран
+        tg.enableClosingConfirmation(); // Подтверждение закрытия
+        tg.setHeaderColor('#2481cc'); // Цвет шапки
+        tg.setBackgroundColor('#ffffff'); // Цвет фона
+
+        // Получаем данные пользователя
+        const user = tg.initDataUnsafe?.user;
+        console.log('Telegram User:', user);
+
+        // ===== ДАННЫЕ МАГАЗИНА =====
+        const categories = [
+            { id: 'all', name: '🛒 Все товары', icon: '🛒' },
+            { id: 'electronics', name: '📱 Электроника', icon: '📱' },
+            { id: 'clothing', name: '👕 Одежда', icon: '👕' },
+            { id: 'books', name: '📚 Книги', icon: '📚' },
+            { id: 'home', name: '🏠 Для дома', icon: '🏠' }
+        ];
+
+        // Загрузка товаров из localStorage или использование демо-данных
+        let products = JSON.parse(localStorage.getItem('telegram-shop-products')) || [
             {
                 id: 1,
                 name: "iPhone 15 Pro",
                 price: 99990,
                 category: "electronics",
-                image: "https://via.placeholder.com/80x80/2481cc/ffffff?text=📱",
-                description: "Новый смартфон с продвинутой камерой"
+                image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop",
+                description: "Новый смартфон с камерой 48MP",
+                stock: 10
             },
             {
                 id: 2,
-                name: "MacBook Air",
+                name: "MacBook Air M2",
                 price: 129990,
-                category: "electronics", 
-                image: "https://via.placeholder.com/80x80/34c759/ffffff?text=💻",
-                description: "Легкий и мощный ноутбук"
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=300&fit=crop",
+                description: "Легкий и мощный ноутбук",
+                stock: 5
             },
             {
                 id: 3,
                 name: "Футболка хлопковая",
                 price: 1990,
                 category: "clothing",
-                image: "https://via.placeholder.com/80x80/ff9500/ffffff?text=👕",
-                description: "Комфортная повседневная футболка"
+                image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop",
+                description: "Комфортная повседневная футболка",
+                stock: 20
             },
             {
                 id: 4,
-                name: "Кроссовки",
-                price: 5990,
-                category: "clothing",
-                image: "https://via.placeholder.com/80x80/ff3b30/ffffff?text=👟", 
-                description: "Спортивные кроссовки для бега"
+                name: "JavaScript для профессионалов",
+                price: 1890,
+                category: "books",
+                image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=300&h=300&fit=crop",
+                description: "Продвинутые техники программирования",
+                stock: 15
             }
-        ];
-
-        const categories = [
-            { id: "all", name: "Все товары" },
-            { id: "electronics", name: "📱 Электроника" },
-            { id: "clothing", name: "👕 Одежда" }
         ];
 
         let cart = JSON.parse(localStorage.getItem('telegram-shop-cart')) || [];
         let currentCategory = 'all';
 
-        // Инициализация приложения
+        // ===== ОСНОВНЫЕ ФУНКЦИИ =====
         function initApp() {
+            applyTelegramTheme();
             renderCategories();
             renderProducts();
-            updateMainButton();
+            updateCartBadge();
+            setupMainButton();
             
-            // Установка темы Telegram
-            applyTelegramTheme();
+            // Показываем приветственное сообщение
+            if (user) {
+                tg.showPopup({
+                    title: `Добро пожаловать, ${user.first_name}!`,
+                    message: 'Добро пожаловать в наш магазин Telegram! 🛍️',
+                    buttons: [{ type: 'ok' }]
+                });
+            }
         }
 
         function applyTelegramTheme() {
-            document.documentElement.style.setProperty('--bg-color', tg.themeParams.bg_color || '#ffffff');
-            document.documentElement.style.setProperty('--text-color', tg.themeParams.text_color || '#000000');
-            document.documentElement.style.setProperty('--button-color', tg.themeParams.button_color || '#2481cc');
-            document.documentElement.style.setProperty('--button-text-color', tg.themeParams.button_text_color || '#ffffff');
-            document.documentElement.style.setProperty('--secondary-bg-color', tg.themeParams.secondary_bg_color || '#f8f8f8');
-            document.documentElement.style.setProperty('--hint-color', tg.themeParams.hint_color || '#999999');
+            // Применяем тему Telegram автоматически через CSS переменные
+            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+            document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
+            document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2481cc');
+            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+            document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#f8f8f8');
         }
 
         function renderCategories() {
@@ -210,7 +260,7 @@
             container.innerHTML = categories.map(cat => `
                 <button class="category-btn ${cat.id === currentCategory ? 'active' : ''}" 
                         onclick="selectCategory('${cat.id}')">
-                    ${cat.name}
+                    ${cat.icon} ${cat.name}
                 </button>
             `).join('');
         }
@@ -219,35 +269,59 @@
             currentCategory = categoryId;
             renderCategories();
             renderProducts();
+            
+            // Вибрация при переключении категорий
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
         }
 
         function renderProducts() {
-            const container = document.getElementById('productsList');
+            const container = document.getElementById('productsGrid');
             const filteredProducts = currentCategory === 'all' 
                 ? products 
                 : products.filter(p => p.category === currentCategory);
 
-            container.innerHTML = filteredProducts.map(product => `
-                <div class="product-card" onclick="showProductPopup(${product.id})">
-                    <img src="${product.image}" alt="${product.name}" class="product-image">
-                    <div class="product-info">
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-description">${product.description}</div>
-                        <div class="product-price">${product.price.toLocaleString()} ₽</div>
+            if (filteredProducts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                        <div>Товары в этой категории скоро появятся</div>
                     </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredProducts.map(product => `
+                <div class="product-card" onclick="showProductDetails(${product.id})">
+                    <img src="${product.image}" alt="${product.name}" class="product-image" 
+                         onerror="this.src='https://via.placeholder.com/300/2481cc/ffffff?text=📦'">
+                    <div class="product-name">${product.name}</div>
+                    <div class="product-description">${product.description}</div>
+                    <div class="product-price">${formatPrice(product.price)} ₽</div>
+                    ${product.stock < 5 ? `<div style="color: #ff3b30; font-size: 11px; margin-top: 4px;">⚠️ Осталось мало</div>` : ''}
                 </div>
             `).join('');
         }
 
-        function showProductPopup(productId) {
+        function showProductDetails(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
 
             tg.showPopup({
                 title: product.name,
-                message: `${product.description}\n\nЦена: ${product.price.toLocaleString()} ₽`,
+                message: `
+${product.description}
+
+💎 Цена: ${formatPrice(product.price)} ₽
+📦 В наличии: ${product.stock} шт.
+                `.trim(),
                 buttons: [
-                    { id: 'add_to_cart', type: 'default', text: '🛒 Добавить в корзину' },
+                    { 
+                        id: 'add_to_cart', 
+                        type: 'default', 
+                        text: '🛒 Добавить в корзину' 
+                    },
                     { type: 'cancel' }
                 ]
             }, (buttonId) => {
@@ -259,9 +333,18 @@
 
         function addToCart(productId) {
             const product = products.find(p => p.id === productId);
-            const existingItem = cart.find(item => item.id === productId);
+            if (!product || product.stock <= 0) {
+                tg.showAlert('❌ Товара нет в наличии');
+                return;
+            }
 
+            const existingItem = cart.find(item => item.id === productId);
+            
             if (existingItem) {
+                if (existingItem.quantity >= product.stock) {
+                    tg.showAlert('❌ Нельзя добавить больше товара, чем есть в наличии');
+                    return;
+                }
                 existingItem.quantity += 1;
             } else {
                 cart.push({
@@ -270,16 +353,40 @@
                 });
             }
 
+            // Обновляем остаток
+            product.stock -= 1;
+            localStorage.setItem('telegram-shop-products', JSON.stringify(products));
             localStorage.setItem('telegram-shop-cart', JSON.stringify(cart));
-            updateMainButton();
-            tg.showAlert('Товар добавлен в корзину! 🛒');
+            
+            updateCartBadge();
+            setupMainButton();
+            
+            // Тактильная отдача
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+            
+            tg.showAlert('✅ Товар добавлен в корзину!');
         }
 
-        function updateMainButton() {
+        function updateCartBadge() {
+            const badge = document.getElementById('cartBadge');
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
             
             if (totalItems > 0) {
-                tg.MainButton.setText(`Корзина (${totalItems})`);
+                badge.style.display = 'flex';
+                badge.textContent = totalItems;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function setupMainButton() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            if (totalItems > 0) {
+                tg.MainButton.setText(`🛒 Корзина: ${formatPrice(totalPrice)} ₽`);
                 tg.MainButton.show();
                 tg.MainButton.onClick(showCart);
             } else {
@@ -288,9 +395,24 @@
         }
 
         function showCart() {
+            if (cart.length === 0) {
+                tg.showAlert('🛒 Корзина пуста');
+                return;
+            }
+
+            const cartItems = cart.map(item => 
+                `${item.name} × ${item.quantity} = ${formatPrice(item.price * item.quantity)} ₽`
+            ).join('\n');
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
             tg.showPopup({
-                title: '🛒 Корзина',
-                message: generateCartMessage(),
+                title: '🛒 Ваша корзина',
+                message: `
+${cartItems}
+
+💎 Итого: ${formatPrice(total)} ₽
+                `.trim(),
                 buttons: [
                     { id: 'checkout', type: 'default', text: '💳 Оформить заказ' },
                     { id: 'clear', type: 'destructive', text: '🗑️ Очистить корзину' },
@@ -298,50 +420,90 @@
                 ]
             }, (buttonId) => {
                 if (buttonId === 'checkout') {
-                    checkout();
+                    checkoutOrder();
                 } else if (buttonId === 'clear') {
                     clearCart();
                 }
             });
         }
 
-        function generateCartMessage() {
-            if (cart.length === 0) return 'Корзина пуста';
-            
-            let message = '';
-            let total = 0;
-            
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-                message += `${item.name} × ${item.quantity} = ${itemTotal.toLocaleString()} ₽\n`;
-            });
-            
-            message += `\n💎 Итого: ${total.toLocaleString()} ₽`;
-            return message;
-        }
-
-        function checkout() {
+        function checkoutOrder() {
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             
-            tg.showConfirm(`Оформить заказ на сумму ${total.toLocaleString()} ₽?`, (confirmed) => {
+            tg.showConfirm(`
+Оформить заказ на сумму ${formatPrice(total)} ₽?
+
+После оформления с вами свяжется менеджер для подтверждения заказа.
+            `.trim(), (confirmed) => {
                 if (confirmed) {
                     // Здесь будет интеграция с платежной системой
-                    tg.showAlert('✅ Заказ оформлен! С вами свяжутся для подтверждения.');
-                    clearCart();
+                    processOrder();
                 }
             });
         }
 
+        function processOrder() {
+            const order = {
+                id: Date.now(),
+                user: user ? {
+                    id: user.id,
+                    first_name: user.first_name,
+                    username: user.username
+                } : null,
+                items: [...cart],
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                status: 'new',
+                date: new Date().toISOString()
+            };
+
+            // Сохраняем заказ
+            const orders = JSON.parse(localStorage.getItem('telegram-shop-orders')) || [];
+            orders.push(order);
+            localStorage.setItem('telegram-shop-orders', JSON.stringify(orders));
+
+            // Очищаем корзину
+            clearCart();
+
+            tg.showAlert('✅ Заказ оформлен! С вами свяжутся для подтверждения.');
+            
+            // Закрываем приложение после успешного заказа
+            setTimeout(() => {
+                tg.close();
+            }, 2000);
+        }
+
         function clearCart() {
+            // Возвращаем товары на склад
+            cart.forEach(cartItem => {
+                const product = products.find(p => p.id === cartItem.id);
+                if (product) {
+                    product.stock += cartItem.quantity;
+                }
+            });
+            
             cart = [];
+            localStorage.setItem('telegram-shop-products', JSON.stringify(products));
             localStorage.setItem('telegram-shop-cart', JSON.stringify(cart));
-            updateMainButton();
-            tg.showAlert('Корзина очищена');
+            
+            updateCartBadge();
+            setupMainButton();
+            renderProducts();
+            
+            tg.showAlert('🗑️ Корзина очищена');
+        }
+
+        function formatPrice(price) {
+            return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
         }
 
         // Запуск приложения
         document.addEventListener('DOMContentLoaded', initApp);
+
+        // Обработка изменения темы
+        tg.onEvent('themeChanged', applyTelegramTheme);
+        tg.onEvent('viewportChanged', () => {
+            tg.expand();
+        });
     </script>
 </body>
 </html>
