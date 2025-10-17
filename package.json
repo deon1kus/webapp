@@ -1,13 +1,16 @@
 {
-  "name": "telegram-shop",
+  "name": "telegram-webapp-shop",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "crypto": "^1.0.1"
   },
   "devDependencies": {
     "vite": "^7.1.10"
   }
 }
-
