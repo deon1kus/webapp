@@ -1,21 +1,27 @@
-// Инициализация Telegram Web App
-const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation();
+// Конфигурация API
+const API_BASE_URL = 'http://194.87.0.193:3001';
 
+// Глобальные переменные
 let products = [];
 let categories = [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let currentCategory = 'all';
+
+// Инициализация Telegram Web App
+const tg = window.Telegram.WebApp;
 
 // Инициализация приложения
 async function initApp() {
+    tg.expand();
+    tg.enableClosingConfirmation();
+    
     // Показываем информацию пользователя
     if (tg.initDataUnsafe.user) {
         const user = tg.initDataUnsafe.user;
         document.getElementById('userName').textContent = `${user.first_name}`;
     }
 
-    // Загружаем товары и категории
+    // Загружаем данные
     await loadCategories();
     await loadProducts();
     
@@ -23,67 +29,79 @@ async function initApp() {
     updateCartCount();
 }
 
-// Загрузка категорий
-async function loadCategories() {
-    try {
-        // Временные данные - позже заменим на API
-        categories = [
-            { id: 'all', name: 'Все товары' },
-            { id: 'electronics', name: 'Электроника' },
-            { id: 'clothing', name: 'Одежда' },
-            { id: 'books', name: 'Книги' }
-        ];
-        
-        renderCategories();
-    } catch (error) {
-        console.error('Ошибка загрузки категорий:', error);
-    }
-}
-
-// Загрузка товаров
+// Загрузка товаров с API
 async function loadProducts() {
     try {
-        // Временные данные - позже заменим на API
+        const response = await fetch(`${API_BASE_URL}/api/products`);
+        if (response.ok) {
+            products = await response.json();
+        } else {
+            throw new Error('API недоступно');
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+        // Демо-данные если API недоступно
         products = [
             {
                 id: 1,
-                name: 'Смартфон',
-                price: 29990,
-                category: 'electronics',
-                image: 'https://via.placeholder.com/150?text=Phone',
-                description: 'Новый смартфон с отличной камерой'
+                name: "iPhone 15 Pro",
+                price: 99990,
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&h=300&fit=crop",
+                description: "Новый смартфон с камерой 48MP",
+                stock: 10
             },
             {
                 id: 2,
-                name: 'Футболка',
-                price: 1990,
-                category: 'clothing', 
-                image: 'https://via.placeholder.com/150?text=T-Shirt',
-                description: 'Хлопковая футболка'
+                name: "MacBook Air M2",
+                price: 129990,
+                category: "electronics",
+                image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=300&h=300&fit=crop",
+                description: "Легкий и мощный ноутбук",
+                stock: 5
             },
             {
                 id: 3,
-                name: 'Книга',
-                price: 890,
-                category: 'books',
-                image: 'https://via.placeholder.com/150?text=Book',
-                description: 'Интересная книга'
+                name: "Футболка хлопковая",
+                price: 1990,
+                category: "clothing",
+                image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop",
+                description: "Комфортная повседневная футболка",
+                stock: 20
             }
         ];
-        
-        renderProducts('all');
-    } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
     }
+    renderProducts(currentCategory);
+}
+
+// Загрузка категорий с API
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/categories`);
+        if (response.ok) {
+            categories = await response.json();
+        } else {
+            throw new Error('API недоступно');
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки категорий:', error);
+        // Демо-категории если API недоступно
+        categories = [
+            { id: 'all', name: 'Все товары', icon: '🛒' },
+            { id: 'electronics', name: 'Электроника', icon: '📱' },
+            { id: 'clothing', name: 'Одежда', icon: '👕' }
+        ];
+    }
+    renderCategories();
 }
 
 // Рендер категорий
 function renderCategories() {
     const container = document.getElementById('categories');
     container.innerHTML = categories.map(cat => `
-        <button class="category-btn ${cat.id === 'all' ? 'active' : ''}" 
+        <button class="category-btn ${cat.id === currentCategory ? 'active' : ''}" 
                 data-category="${cat.id}">
-            ${cat.name}
+            ${cat.icon || ''} ${cat.name}
         </button>
     `).join('');
     
@@ -95,7 +113,8 @@ function renderCategories() {
             // Добавляем активный класс текущей кнопке
             btn.classList.add('active');
             // Показываем товары выбранной категории
-            renderProducts(btn.dataset.category);
+            currentCategory = btn.dataset.category;
+            renderProducts(currentCategory);
         });
     });
 }
@@ -107,11 +126,17 @@ function renderProducts(category) {
         ? products 
         : products.filter(p => p.category === category);
     
+    if (filteredProducts.length === 0) {
+        container.innerHTML = '<div class="loading">Товары не найдены</div>';
+        return;
+    }
+    
     container.innerHTML = filteredProducts.map(product => `
         <div class="product-card" onclick="showProductDetails(${product.id})">
-            <img src="${product.image}" alt="${product.name}" class="product-image">
+            <img src="${product.image}" alt="${product.name}" class="product-image"
+                 onerror="this.src='https://via.placeholder.com/150/2481cc/ffffff?text=📦'">
             <h3>${product.name}</h3>
-            <div class="product-price">${product.price} руб.</div>
+            <div class="product-price">${product.price.toLocaleString()} руб.</div>
             <button class="add-to-cart" onclick="event.stopPropagation(); addToCart(${product.id})">
                 В корзину
             </button>
@@ -125,7 +150,7 @@ function showProductDetails(productId) {
     if (product) {
         tg.showPopup({
             title: product.name,
-            message: `${product.description}\n\nЦена: ${product.price} руб.`,
+            message: `${product.description}\n\nЦена: ${product.price.toLocaleString()} руб.`,
             buttons: [
                 { id: 'add', type: 'default', text: 'Добавить в корзину' },
                 { type: 'cancel' }
@@ -136,6 +161,12 @@ function showProductDetails(productId) {
             }
         });
     }
+}
+
+// Обновление счетчика корзины
+function updateCartCount() {
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = totalItems;
 }
 
 // Инициализация при загрузке
