@@ -24,12 +24,6 @@ function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// Обновление счетчика корзины
-function updateCartCount() {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('cartCount').textContent = totalItems;
-}
-
 // Открытие корзины
 document.getElementById('cartBtn').addEventListener('click', () => {
     document.getElementById('cartModal').style.display = 'block';
@@ -56,7 +50,7 @@ function renderCart() {
         <div class="cart-item">
             <div class="item-info">
                 <strong>${item.name}</strong>
-                <div>${item.price} руб. × ${item.quantity}</div>
+                <div>${item.price.toLocaleString()} руб. × ${item.quantity}</div>
             </div>
             <div class="quantity-controls">
                 <button class="quantity-btn" onclick="changeQuantity(${item.id}, -1)">-</button>
@@ -68,7 +62,7 @@ function renderCart() {
     `).join('');
     
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    totalElement.textContent = total;
+    totalElement.textContent = total.toLocaleString();
 }
 
 // Изменение количества
@@ -103,21 +97,43 @@ async function checkout() {
 
     try {
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        // Здесь будет интеграция с платежной системой
-        tg.showConfirm(`Оформить заказ на сумму ${total} руб.?`, (confirmed) => {
-            if (confirmed) {
-                // Временная логика - позже добавим реальное оформление
-                tg.showAlert('Заказ оформлен! Скоро с вами свяжутся.');
-                cart = [];
-                saveCart();
-                updateCartCount();
-                closeCart();
-            }
+        const orderData = {
+            items: cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+            })),
+            total: total,
+            userId: tg.initDataUnsafe?.user?.id,
+            userData: tg.initDataUnsafe?.user
+        };
+
+        // Отправка заказа на API
+        const response = await fetch(`${API_BASE_URL}/api/orders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
         });
+
+        if (response.ok) {
+            const result = await response.json();
+            tg.showAlert(`✅ Заказ #${result.order.id} оформлен! Скоро с вами свяжутся.`);
+            
+            // Очищаем корзину
+            cart = [];
+            saveCart();
+            updateCartCount();
+            closeCart();
+        } else {
+            const error = await response.json();
+            tg.showAlert(`❌ Ошибка: ${error.error}`);
+        }
         
     } catch (error) {
         console.error('Ошибка оформления заказа:', error);
-        tg.showAlert('Ошибка при оформлении заказа');
+        tg.showAlert('❌ Ошибка при оформлении заказа');
     }
 }
